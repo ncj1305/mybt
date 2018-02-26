@@ -1,10 +1,13 @@
 package com.rhcj.mybt.open;
 
+import android.util.Log;
+
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.security.NoSuchAlgorithmException;
 import java.util.HashMap;
 import java.security.InvalidKeyException;
+import java.util.logging.Logger;
 
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
@@ -38,7 +41,7 @@ public class ApiClient {
 		return String.valueOf(System.currentTimeMillis());
 	}
 
-	private String postRequest(String strHost, HashMap<String, String> rgParams,  HashMap<String, String> httpHeaders) {
+	private String requestPost(String strHost, HashMap<String, String> rgParams, HashMap<String, String> httpHeaders) {
 		String response = "";
 
 		HttpRequest request = null;
@@ -72,11 +75,18 @@ public class ApiClient {
 		return response;
 	}
 
-	private String getRequest(String strHost, String rgParams) {
+	private String requestGet(String strHost, String target, String paramString) {
 		String response = "";
 
 		HttpRequest request = null;
-		request = HttpRequest.get(strHost + rgParams);
+		if (paramString == null) {
+			Log.d("ApiClient", "requestGet : " + strHost + target);
+			request = HttpRequest.get(strHost + target);
+		} else {
+			Log.d("ApiClient", "requestGet : " + strHost + target + "?" + paramString);
+			request = HttpRequest.get(strHost + target + "?" + paramString);
+		}
+
 		request.readTimeout(10000);
 
 		System.out.println("Response was: " + response);
@@ -162,7 +172,7 @@ public class ApiClient {
 		String api_host = api_url + endpoint;
 		HashMap<String, String> httpHeaders = getHttpHeaders(endpoint, rgParams, api_key, api_secret);
 
-		rgResultDecode = postRequest(api_host, rgParams, httpHeaders);
+		rgResultDecode = requestPost(api_host, rgParams, httpHeaders);
 
 		if (!rgResultDecode.startsWith("error")) {
 			HashMap<String, String> result;
@@ -176,14 +186,15 @@ public class ApiClient {
 		return rgResultDecode;
 	}
 
-	public String callPublicApi(String endpoint, String params) {
+	public String callPublicApi(String endpoint, String target, HashMap<String, String> params) {
 		String rgResultDecode = "";
-		HashMap<String, String> rgParams = new HashMap<String, String>();
-		rgParams.put("endpoint", endpoint);
-
+		String paramString = null;
+		if (params != null) {
+			paramString = Util.mapToQueryString(params).replace("?", "");
+		}
 		String api_host = api_url + endpoint;
 
-		rgResultDecode = getRequest(api_host, params);
+		rgResultDecode = requestGet(api_host, target, paramString);
 
 		if (!rgResultDecode.startsWith("error")) {
 			HashMap<String, String> result;
